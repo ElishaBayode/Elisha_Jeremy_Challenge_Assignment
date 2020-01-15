@@ -1,0 +1,67 @@
+---
+title: "Ebola outbreak in southwest Uganda: a general assessment of the epidemic"
+author: "Elisha Are, Jeremy Bingham"
+date: "10 January 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Background  
+
+
+
+## Introduction 
+
+
+
+## Key Question 
+
+
+
+
+
+## Data Analysis 
+
+
+#### Data cleaning 
+
+```{r Data cleaning, echo=FALSE}
+setwd("C:/Users/ELISHAARE/Desktop/Challenge_assignment/Elisha_Jeremy_Challenge_Assignment")
+ebola_linelist_data <- read.csv(file = "ebola_2.csv") #importing raw data
+library(devtools)
+library(linelist)
+library(tidyverse)
+library(lubridate)
+ebola_linelist_data_clean <- clean_data(ebola_linelist_data) 
+ebola_linelist_data_cleann <-  clean_dates(ebola_linelist_data) 
+ebola_linelist_data_cleann <- arrange(ebola_linelist_data_cleann, onsetDate) 
+#devtools::install_github("reconhub/linelist")
+#install.packages("linelist") # Installing linelist package for data cleaning 
+
+#setRepositories(addURLs =
+#               c(CRANxtras = "https://github.com/reconhub/linelist.git"))
+#devtools::install_github("reconhub/linelist")
+#library(installr)
+#updateR()
+
+```
+
+
+
+
+## Results
+
+## Discussion 
+
+
+
+
+## Including Plots
+
+
+
+
+
