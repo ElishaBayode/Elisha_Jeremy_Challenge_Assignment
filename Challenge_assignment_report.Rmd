@@ -3,6 +3,8 @@ title: "Ebola outbreak in southwest Uganda: state of the epidemic"
 author: "Elisha Are, Jeremy Bingham"
 date: "10 January 2020"
 output: html_document
+theme: sandstone
+highlight: tango
 fig_width: 1 
 fig_height: 4 
 ---
@@ -25,11 +27,22 @@ library(tidyverse)
 library(lubridate)
 library(incidence)
 
-# User instruction: Please update the following command to point to the directory where the dataset is stored
+# reportThemeEJ <- theme(minimal)
 
-# *set automatic prompts for directory and data filename
-# setwd("C:/Users/ELISHAARE/Desktop/Challenge_assignment/Elisha_Jeremy_Challenge_Assignment")
-setwd("C:/Users/jem/Desktop/Smarties/Elisha_Jeremy_Challenge_Assignment")
+# User instruction
+# By default the program looks for the directory C:/Users/your_username/Desktop/Smarties/Elisha_Jeremy_Challenge_assignment
+# If this directory is not found then the program will prompt you to select the directory where the script is stored
+# Feel free to permanently set your own directory by changing "wdstring" below
+
+wdstring = paste("C:/Users/",Sys.info()['login'],"/Desktop/Smarties/Elisha_Jeremy_Challenge_Assignment",sep="")
+
+if(dir.exists(wdstring))
+{setwd(wdstring)
+  }else{choose.dir()}
+
+
+# FILE <- file.choose()
+# DIR  <- dirname(FILE)
 
 calculateCarefulCaseFatality <- function(dataset, thresholdTimeToDeath, rounded=TRUE, asPercentage= TRUE){
   lastReportDate = last(dataset$reportDate)
@@ -107,27 +120,22 @@ ebolaCasesProbable <- transformedData %>%
 
 lengthOfOutbreak = abs(difftime(first(transformedData$onsetDate),last(transformedData$onsetDate)))
 lastReportDate = last(transformedData$reportDate)
+firstOnsetDate = first(transformedData$onsetDate)
 
 conservativeThreshold <- max(as.numeric(transformedData$timeBeforeDeath),na.rm = TRUE)
 liberalThreshold <- mean(as.numeric(transformedData$timeBeforeDeath),na.rm = TRUE)+2*sd(as.numeric(transformedData$timeBeforeDeath),na.rm = TRUE)
-calculateCarefulCaseFatality(transformedData,liberalThreshold)
+caseFatalityEstimate = calculateCarefulCaseFatality(transformedData,liberalThreshold)
+caseFatalityEstimateUsingMaxTimeToDeath = calculateCarefulCaseFatality(transformedData,conservativeThreshold)
+crudeCaseFatality = calculateCrudeCaseFatality(transformedData)
 
 meanReportingDelay = mean(as.numeric(difftime(transformedData$reportDate,transformedData$onsetDate)))
+
+
 ```
 
 
 ## Introduction
-- one sentce intro, this report give a summary of the ongoing ebola outbreak taking place in Southwest Uganda up until **last reporting date.
-- date started
-- last date of reported data available
-- we estimate the case fatality rate to be..
-- mean delay between onset and reporting
-
-
-## Key Question 
-The aims of this report are to characterise the ongoing epidemic in Southwest Uganda by presenting the following information:
-**list
-- The incidenc over time based on the raw data up until ** date.
+This report summarises available data from the ongoing ebola outbreak taking place in Southwest Uganda, ongoing since `r firstOnsetDate`. The most recent case report included in the available data was made on `r lastReportDate`. The mean reporting delay in the data is `r  meanReportingDelay`. The estimated case fatality rate is `r caseFatalityEstimate`.
 
 ## Incidence
 % * intro to epi curve
@@ -139,18 +147,38 @@ The aims of this report are to characterise the ongoing epidemic in Southwest Ug
 # ** need titles, x label
 # * make incidence plots pretty
 # plot.new()
-plot(incidence(transformedData$onsetDate,interval = 1))
-plot(incidence(transformedData$onsetDate,interval = 7))
+plot(incidence(transformedData$onsetDate,interval = 1))  + labs(y = "Daily incidence", x ="Date" )
+plot(incidence(transformedData$onsetDate,interval = 7))  + labs(y = "Weekly incidence", x = "Date")
 # dev.off()
 # **set figure sizes
 # **set whitespace above/below figures
 
-plot(cumulate(incidence(transformedData$onsetDate,interval = 1)))
+plot(cumulate(incidence(transformedData$onsetDate,interval = 1))) + labs(y = "Daily cumulative incidence", x = "Date")
 
 
 ```
 
 ## Case fatality rate
+
+```{r, echo=FALSE}
+casesWhichWouldHaveDiedIfTheyWereGoingToDie <- transformedData %>%
+                                              subset(as.numeric(difftime(lastReportDate,onsetDate)) >= liberalThreshold)
+
+mutbd = round(mean(as.numeric(transformedData$timeBeforeDeath),na.rm = TRUE),1)
+sdtbd = round(2*sd(as.numeric(transformedData$timeBeforeDeath),na.rm = TRUE),1)
+
+```
+The case fatality rate is estimated under the assumption that cases for which the date of death is not reported have recovered. As such, recently-reported cases should not be included in this calculation, since they are relatively likely to still be alive regardless of their prospects for recovery, and their inclusion would result in under-estimation of the case fatality.
+
+The case fatality rate is estimated as follows:
+The delays between onset and death are calculated for all cases with a date of death. The mean $\mu$ and standard deviation $\sigma$ of these times (in days) is calculated. The most recent cases considered for inclusion in the case fatality must be have occurred at least $\mu+2 \sigma =$ `r mutbd` $+$ `r sdtbd` $=$ `r round(liberalThreshold,1)` days before the most recent report date.
+We assume that cases without a recorded death date (death date = NA) for more than `r round(liberalThreshold,1)` after date of onset have recovered. This leaves `r round(100*nrow(casesWhichWouldHaveDiedIfTheyWereGoingToDie)/nrow(transformedData))`\% of the cases to date which occured early enough (date of onset at least `r round(liberalThreshold,1)` before the last date of reporting) to be included in the case fatality rate.
+
+Using this method, the case fatality rate is calculated to be `r caseFatalityEstimate`.
+
+Using more conservative requirement for inclusion, namely that time between onset and last date of reporting $\geq$ the maximum delay between onset and death (`r conservativeThreshold` days),  the case fatality is calculated to be `r caseFatalityEstimateUsingMaxTimeToDeath`\%.
+
+The crude case fatality ($\frac{\text{n}_\text{deaths}}{\text{n}_\text{cases}}$) is `r crudeCaseFatality`\%.
 
 ```{r,echo=FALSE}
 crudeCaseFatality = calculateCrudeCaseFatality(transformedData)
@@ -161,24 +189,27 @@ CFProbable = calculateCarefulCaseFatality(ebolaCasesProbable,thresholdTimeToDeat
 CFSuspected = calculateCarefulCaseFatality(ebolaCasesSuspected,thresholdTimeToDeath = liberalThreshold)
 ```
 
-To be interpreted with some caution: the case fatality rate per `status' is found to be ...** 
+To be interpreted with some caution (due to smaller sample sizes): the case fatality rate per `status' is found to be (using the same method as described above):
+Case fatality in 'Confirmed' cases: `r CFConfirmed`.
+Case fatality in 'Probable' cases: `r CFProbable`.
+Case fatality in 'Suspected' cases: `r CFSuspected`.
 
 ## Reporting delays
 ```{r, echo=FALSE}
-hist(as.numeric(difftime(transformedData$reportDate,transformedData$onsetDate)))
+hist(as.numeric(difftime(transformedData$reportDate,transformedData$onsetDate)),main="",xlab = "Reporting delay",ylab= "Frequency")
 ```
 
 
 ## Time to death in fatal cases
 ```{r, echo=FALSE}
-hist(as.numeric(transformedData$timeBeforeDeath),breaks = 10)
+hist(as.numeric(transformedData$timeBeforeDeath),breaks = 10, main = '',xlab='Delays between onset an death in fatal cases',ylab= 'Frequency')
 ```
 
 ## Fitting an exponential growth model to the weekly incidence
 ```{r, echo=FALSE}
 
 model = fit(incidence(transformedData$onsetDate,interval=7))
-plot(model)
+plot(model) + ggtitle("Exponential model fit to incidence data") + labs(y = "Fitted incidence", x = "Date")
 
 ```
 
@@ -190,6 +221,12 @@ plot(model)
 ## Including Plots
 
 
+
+
+###Session info when this document was compiled
+```{r,echo=FALSE}
+sessionInfo()
+```
 
 
 
