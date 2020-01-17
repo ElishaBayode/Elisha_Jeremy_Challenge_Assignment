@@ -111,7 +111,7 @@ lastReportDate = last(transformedData$reportDate)
 conservativeThreshold <- max(as.numeric(transformedData$timeBeforeDeath),na.rm = TRUE)
 liberalThreshold <- mean(as.numeric(transformedData$timeBeforeDeath),na.rm = TRUE)+2*sd(as.numeric(transformedData$timeBeforeDeath),na.rm = TRUE)
 calculateCarefulCaseFatality(transformedData,liberalThreshold)
-
+firstonsetDate <- first(transformedData$onsetDate)
 meanReportingDelay = mean(as.numeric(difftime(transformedData$reportDate,transformedData$onsetDate)))
 ```
 
@@ -130,7 +130,7 @@ The aims of this report are to characterise the ongoing epidemic in Southwest Ug
 - The incidenc over time based on the raw data up until ** date.
 
 ## Incidence
-% * intro to epi curve
+The incidence rate is estimated from the date of onset of the disease. The first incidence of ebola is taken as the reported case with the earliest date of onset. Figure 1 presents the daily incidence of the disease, starting from  `r firstonsetDate`  to `lastonstDate`. So far, the largest daily incidence of ebola was recorded on `r maxincidenceDate`, with `r maxDailyincidence` cases. 
 
 ```{r,fig.height = 3, fig.width = 7, echo=FALSE}
 # 
@@ -139,16 +139,29 @@ The aims of this report are to characterise the ongoing epidemic in Southwest Ug
 # ** need titles, x label
 # * make incidence plots pretty
 # plot.new()
-plot(incidence(transformedData$onsetDate,interval = 1))
 plot(incidence(transformedData$onsetDate,interval = 7))
 # dev.off()
 # **set figure sizes
 # **set whitespace above/below figures
+First()
 
-plot(cumulate(incidence(transformedData$onsetDate,interval = 1)))
 
 
 ```
+
+Figure 2 shows the weekly number of reported ebola cases from the begining of the epidemic to date of onset of the last reported case. Week `r maxincidenceWeek` witnessed the highest number of ebola cases so far, with `r maxWeeklyincidence`. 
+
+```{r, echo = FALSE}
+plot(incidence(transformedData$onsetDate,interval = 1))
+
+```
+Figure 3 presents the cummulative number of ebola cases from the date of the first reported case to the date the last case was reported. 
+
+```{r, echo = FALSE}
+plot(cumulate(incidence(transformedData$onsetDate,interval = 1)))
+
+```
+
 
 ## Case fatality rate
 
@@ -164,12 +177,15 @@ CFSuspected = calculateCarefulCaseFatality(ebolaCasesSuspected,thresholdTimeToDe
 To be interpreted with some caution: the case fatality rate per `status' is found to be ...** 
 
 ## Reporting delays
+In most of the reported cases, there are delays between the date of onset and the date of report of the cases. The length of the delay may be a good indicator of the  effectiveness of the health system of the community. It could also be a useful metric when estimating the number of cases that might still be unreported. Figure 4 shows the distribution of the delay between date of onset and date of report. 
+
 ```{r, echo=FALSE}
 hist(as.numeric(difftime(transformedData$reportDate,transformedData$onsetDate)))
 ```
 
 
 ## Time to death in fatal cases
+Figure 5 presents the time delay from the onset of disease to the time of death. This shows the average time it takes before 
 ```{r, echo=FALSE}
 hist(as.numeric(transformedData$timeBeforeDeath),breaks = 10)
 ```
