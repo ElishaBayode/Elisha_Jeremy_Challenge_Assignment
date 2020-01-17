@@ -13,11 +13,10 @@ library(linelist)
 library(tidyverse)
 library(lubridate)
 library(incidence)
+library(envDocument)
 
-
-
-
-
+# FILE <- file.choose()
+# DIR  <- dirname(FILE)
 # *set automatic prompt
 setwd("C:/Users/ELISHAARE/Desktop/Challenge_assignment/Elisha_Jeremy_Challenge_Assignment")
 setwd("C:/Users/jeremyb/Desktop/Smarties/Elisha_Jeremy_Challenge_Assignment")
@@ -132,6 +131,7 @@ ebolaCasesProbable <- transformedData %>%
 # ** need titles, x label
 # * make incidence plots pretty
 plot(incidence(transformedData$onsetDate,interval = 1),title("Incidence"))
+
 plot(incidence(transformedData$onsetDate,interval = 7))
 
 plot(incidence(ebolaCasesConfirmed$onsetDate,interval=1))
@@ -140,11 +140,48 @@ plot(incidence(ebolaCasesProbable$onsetDate,interval=1))
 
 ##cumulative incidence plot
 plot(cumulate(incidence(transformedData$onsetDate,interval = 1)))
+weeklyIncidence = incidence(transformedData$onsetDate,interval=7)
+weeklyIncidence$dates
+model2 = fit(incidence(transformedData$onsetDate,interval=7),split = weeklyIncidence$dates[which.max(weeklyIncidence$counts)])
+plot(model2)
+model2
 
 model = fit(incidence(transformedData$onsetDate,interval=7))
-plot(model)
+plot(model) + geom_point(aes(x=incidence(transformedData$onsetDate,interval=7)$dates,y=incidence(transformedData$onsetDate,interval=7)$counts,col='red')) + theme(legend.position = "none")
+
+plot(model2) + geom_point(aes(x=incidence(transformedData$onsetDate,interval=7)$dates,y=incidence(transformedData$onsetDate,interval=7)$counts,col='red')) + theme(legend.position = "none")
+
+plot(incidence(transformedData$onsetDate))
+
+model
+
+model2$before$info$r
+model2$before$info$r.conf[1] #2.5%
+model2$before$info$r.conf[2] #95%
+
+model2$after$info$r
+model2$after$info$r.conf[1] #2.5%
+model2$after$info$r.conf[2] #95%
+
+model$info$r
+model$info$r.conf[1] #2.5%
+model$info$r.conf[2] #95%
 
 
+incidence(transformedData$onsetDate)$dates
+last(transformedData$onsetDate)
+
+
+# plot((seq(1,length(weeklyIncidence$dates[1:6]))), weeklyIncidence$counts[1:6])
+
+# fit = lm((weeklyIncidence$counts[1:6]) ~ log(seq(1,length(weeklyIncidence$dates[1:6])),base=2))
+
+# fit$coefficients
+
+# Plot the fitted line
+# lines(seq(1,length(weeklyIncidence$dates[1:6])), seq(1,length(weeklyIncidence$dates[1:6])) ^ fit$coefficients[2], col = "red")
+
+# plot(model)
 
 ## case fatalities by category
 
@@ -163,3 +200,24 @@ calculateCarefulCaseFatality(ebolaCasesSuspected,thresholdTimeToDeath = liberalT
 # README stuff
 # required packages
 # Most recent R, package, and Rstudio versions confirmed working
+
+
+incidenceToDate = incidence(transformedData$onsetDate)
+max(incidenceToDate$counts)
+incidenceToDate$dates[which.max(incidenceToDate$counts)]
+
+print(incidenceToDate$counts)
+print(incidenceToDate[1,1])
+
+weeklyIncidenceToDate = incidence(transformedData$onsetDate,interval = 7)
+max(weeklyIncidenceToDate$counts)
+which.max(weeklyIncidenceToDate$counts)
+
+ensure_library = function (lib.name){
+  x = require(lib.name, quietly = TRUE, character.only = TRUE)
+  if (!x) {
+    install.packages(lib.name, dependencies = TRUE, quiet = TRUE)
+    x = require(lib.name, quietly = TRUE, character.only = TRUE)
+  }
+  x
+}
