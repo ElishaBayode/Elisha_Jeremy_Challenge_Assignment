@@ -86,8 +86,8 @@ transformedData <- transformedData %>%
 # hist(as.numeric(transformedData$timeBeforeDeath),breaks = 10)
 hist(as.numeric(difftime(transformedData$reportDate,transformedData$onsetDate)))
 # pick a threshold timeBeforeDeath
-conservativeThreshold <- max(as.numeric(transformedData$timeBeforeDeath),na.rm = TRUE)
-liberalThreshold <- mean(as.numeric(transformedData$timeBeforeDeath),na.rm = TRUE)+2*sd(as.numeric(transformedData$timeBeforeDeath),na.rm = TRUE)
+  conservativeThreshold <- max(as.numeric(transformedData$timeBeforeDeath),na.rm = TRUE)
+  liberalThreshold <- mean(as.numeric(transformedData$timeBeforeDeath),na.rm = TRUE)+2*sd(as.numeric(transformedData$timeBeforeDeath),na.rm = TRUE)
 # subset all cases for which as.numeric(difftime(lastReportingDate,onsetDate)) >= threshold
 # for these cases calculate death rate
 thresholdTimeSinceOnset = liberalThreshold

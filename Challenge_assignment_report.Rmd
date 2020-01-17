@@ -1,58 +1,186 @@
 ---
-title: "Ebola outbreak in southwest Uganda: a general assessment of the epidemic"
+title: "Ebola outbreak in southwest Uganda: state of the epidemic"
 author: "Elisha Are, Jeremy Bingham"
 date: "10 January 2020"
 output: html_document
+fig_width: 1 
+fig_height: 4 
 ---
 
 ```{r setup, include=FALSE}
+rm(list = ls())
 knitr::opts_chunk$set(echo = TRUE)
-```
 
-## Background  
+# The following code may be used to install the required packages
+# install.packages("devtools")18
+# devtools::install_github("reconhub/linelist")
+# devtools::install_github("reconhub/reportfactory")
+# devtools::install_github("reconhub/epicontacts")
 
-
-
-## Introduction 
-
-
-
-## Key Question 
-
-
-
-
-
-## Data Analysis 
-
-
-#### Data cleaning 
-
-```{r Data cleaning, echo=FALSE}
-setwd("C:/Users/ELISHAARE/Desktop/Challenge_assignment/Elisha_Jeremy_Challenge_Assignment")
-ebola_linelist_data <- read.csv(file = "ebola_2.csv") #importing raw data
+# *set required packages to automatically install if necessary
+# *suppress specific warning messages in knitted html
 library(devtools)
 library(linelist)
 library(tidyverse)
 library(lubridate)
-ebola_linelist_data_clean <- clean_data(ebola_linelist_data) 
-ebola_linelist_data_cleann <-  clean_dates(ebola_linelist_data) 
-ebola_linelist_data_cleann <- arrange(ebola_linelist_data_cleann, onsetDate) 
-#devtools::install_github("reconhub/linelist")
-#install.packages("linelist") # Installing linelist package for data cleaning 
+library(incidence)
 
-#setRepositories(addURLs =
-#               c(CRANxtras = "https://github.com/reconhub/linelist.git"))
-#devtools::install_github("reconhub/linelist")
-#library(installr)
-#updateR()
+# User instruction: Please update the following command to point to the directory where the dataset is stored
+
+# *set automatic prompts for directory and data filename
+# setwd("C:/Users/ELISHAARE/Desktop/Challenge_assignment/Elisha_Jeremy_Challenge_Assignment")
+setwd("C:/Users/jem/Desktop/Smarties/Elisha_Jeremy_Challenge_Assignment")
+
+calculateCarefulCaseFatality <- function(dataset, thresholdTimeToDeath, rounded=TRUE, asPercentage= TRUE){
+  lastReportDate = last(dataset$reportDate)
+  casesConsidered <- dataset %>%
+    subset(as.numeric(difftime(lastReportDate,onsetDate)) >= thresholdTimeToDeath)
+  nCases = nrow(casesConsidered)
+  nDeaths = nCases - sum(is.na(casesConsidered$deathDate))
+  caseFatalityRate = nDeaths/nCases
+ 
+  #* if (nrow(casesConsidered==0)){
+  #   print("There are no cases in this dataset which are eligible.")
+  #   return(NA)
+  # }
+  if(rounded){
+    if(asPercentage){  
+      return(round(100*caseFatalityRate))}
+    else{
+      return(round(100*caseFatalityRate)/100)
+    }
+  }
+  if(asPercentage){
+    return(100*caseFatalityRate)}
+  return(caseFatalityRate)
+}
+
+
+calculateCrudeCaseFatality <- function(dataset, rounded=TRUE, asPercentage=TRUE){
+  nCases = nrow(dataset)
+  nDeaths = nCases - sum(is.na(dataset$deathDate))
+  caseFatalityRate = nDeaths/nCases
+  
+  if(rounded){
+    if(asPercentage){
+      return(round(100*caseFatalityRate))}
+    else{
+      return(round(100*caseFatalityRate)/100)
+    }
+  }
+  if(asPercentage){
+    return(100*caseFatalityRate)}
+  return(caseFatalityRate)
+}
 
 ```
 
+```{r Data import, echo=FALSE}
+#Import data
+
+ebolaData <- read.csv(file = "ebola_2.csv") #importing raw data
+ebolaDataDateFormatted <- clean_dates(ebolaData)
+# ebola_linelist_data_cleann <-  clean_dates(ebola_linelist_data)
 
 
+transformedData <- ebolaDataDateFormatted %>%
+                                    arrange(onsetDate) %>%
+                                    mutate (reportingDelay = difftime(reportDate, onsetDate))
 
-## Results
+transformedData <- transformedData %>%
+                                    mutate(timeBeforeDeath = difftime(deathDate,onsetDate))
+
+
+ebolaCasesConfirmed <- transformedData %>%
+  filter(status=='confirmed')
+
+ebolaCasesSuspected <- transformedData %>%
+  filter(status=='suspected')
+
+ebolaCasesProbable <- transformedData %>%
+  filter(status=='probable')
+```
+
+
+```{r calculate key stats, echo=FALSE}
+
+
+lengthOfOutbreak = abs(difftime(first(transformedData$onsetDate),last(transformedData$onsetDate)))
+lastReportDate = last(transformedData$reportDate)
+
+conservativeThreshold <- max(as.numeric(transformedData$timeBeforeDeath),na.rm = TRUE)
+liberalThreshold <- mean(as.numeric(transformedData$timeBeforeDeath),na.rm = TRUE)+2*sd(as.numeric(transformedData$timeBeforeDeath),na.rm = TRUE)
+calculateCarefulCaseFatality(transformedData,liberalThreshold)
+
+meanReportingDelay = mean(as.numeric(difftime(transformedData$reportDate,transformedData$onsetDate)))
+```
+
+
+## Introduction
+- one sentce intro, this report give a summary of the ongoing ebola outbreak taking place in Southwest Uganda up until **last reporting date.
+- date started
+- last date of reported data available
+- we estimate the case fatality rate to be..
+- mean delay between onset and reporting
+
+
+## Key Question 
+The aims of this report are to characterise the ongoing epidemic in Southwest Uganda by presenting the following information:
+**list
+- The incidenc over time based on the raw data up until ** date.
+
+## Incidence
+% * intro to epi curve
+
+```{r,fig.height = 3, fig.width = 7, echo=FALSE}
+# 
+# par(mfrow=c(1,2))
+# should we count dates on x axis from outbreak onset or in calendar date
+# ** need titles, x label
+# * make incidence plots pretty
+# plot.new()
+plot(incidence(transformedData$onsetDate,interval = 1))
+plot(incidence(transformedData$onsetDate,interval = 7))
+# dev.off()
+# **set figure sizes
+# **set whitespace above/below figures
+
+plot(cumulate(incidence(transformedData$onsetDate,interval = 1)))
+
+
+```
+
+## Case fatality rate
+
+```{r,echo=FALSE}
+crudeCaseFatality = calculateCrudeCaseFatality(transformedData)
+conservativeCaseFatality = calculateCarefulCaseFatality(transformedData, thresholdTimeToDeath = conservativeThreshold)
+
+CFConfirmed = calculateCarefulCaseFatality(ebolaCasesConfirmed,thresholdTimeToDeath = liberalThreshold)
+CFProbable = calculateCarefulCaseFatality(ebolaCasesProbable,thresholdTimeToDeath = liberalThreshold)
+CFSuspected = calculateCarefulCaseFatality(ebolaCasesSuspected,thresholdTimeToDeath = liberalThreshold)
+```
+
+To be interpreted with some caution: the case fatality rate per `status' is found to be ...** 
+
+## Reporting delays
+```{r, echo=FALSE}
+hist(as.numeric(difftime(transformedData$reportDate,transformedData$onsetDate)))
+```
+
+
+## Time to death in fatal cases
+```{r, echo=FALSE}
+hist(as.numeric(transformedData$timeBeforeDeath),breaks = 10)
+```
+
+## Fitting an exponential growth model to the weekly incidence
+```{r, echo=FALSE}
+
+model = fit(incidence(transformedData$onsetDate,interval=7))
+plot(model)
+
+```
 
 ## Discussion 
 
