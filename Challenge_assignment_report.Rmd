@@ -96,7 +96,7 @@ if(dir.exists(wdstring))
 
 
 #Import data
-if("ebola_2.csv" %in% list.files()){ebolaData <- read.csv(file = "ebola_2.csv") #importing raw data
+if("ebola_2_update.csv" %in% list.files()){ebolaData <- read.csv(file = "ebola_2_update.csv") #importing raw data
 }else{
   print("Select the .csv file where the data is stored.")
   chosenFile <- file.choose()
@@ -124,6 +124,12 @@ ebolaCasesSuspected <- transformedData %>%
 
 ebolaCasesProbable <- transformedData %>%
   filter(status=='probable')
+
+ebolaCasesInMales <- transformedData %>%
+  filter(sex=='male')
+
+ebolaCasesInFemales <- transformedData %>%
+  filter(sex=='female')
 ```
 
 
@@ -141,6 +147,8 @@ liberalThreshold <- mean(as.numeric(transformedData$timeBeforeDeath),na.rm = TRU
 caseFatalityEstimate = calculateCarefulCaseFatality(transformedData,liberalThreshold)
 caseFatalityEstimateUsingMaxTimeToDeath = calculateCarefulCaseFatality(transformedData,conservativeThreshold)
 crudeCaseFatality = calculateCrudeCaseFatality(transformedData)
+caseFatalityM = calculateCarefulCaseFatality(ebolaCasesInMales, liberalThreshold)
+caseFatalityF = calculateCarefulCaseFatality(ebolaCasesInFemales, liberalThreshold)
 
 meanReportingDelay = mean(as.numeric(difftime(transformedData$reportDate,transformedData$onsetDate)))
 
@@ -158,25 +166,21 @@ weekOfMaxIncidence = which.max(weeklyIncidenceToDate$counts)
 
 
 ## Introduction
-This report summarises available data from the ongoing Ebola outbreak taking place in Southwest Uganda, ongoing since `r firstOnsetDate`. The most recent case report included in the available data was made on `r lastReportDate`. The mean reporting delay in the data is `r  signif(meanReportingDelay,3)` days. The estimated case fatality rate is `r caseFatalityEstimate`\%.
+This report summarises available data from the ongoing Ebola outbreak taking place in Southwest Uganda, ongoing since `r firstOnsetDate`. The most recent case report included in the available data was made on `r lastReportDate`. The mean reporting delay in the data is `r  signif(meanReportingDelay,1)` days. A total of `r nrow(transformedData)` cases (`r nrow(ebolaCasesInMales)` male, `r nrow(ebolaCasesInFemales)` female), (`r nrow(ebolaCasesSuspected)` suspected, `r nrow(ebolaCasesProbable)` probable, `r nrow(ebolaCasesConfirmed)` confirmed) have been reported to date. The estimated case fatality rate is `r caseFatalityEstimate`\%.
 
 ## Incidence
 The incidence rate is estimated from the date of onset of the disease. The first incidence of Ebola is taken as the reported case with the earliest date of onset. Figure 1 presents the daily incidence of the disease, starting from  `r firstOnsetDate`  to `r lastOnsetDate`. So far, the largest daily incidence of Ebola was recorded on `r dateOfMaxIncidence`, with `r maxDailyIncidence` cases. Incidence values and plots are calculated and generated using the R package "incidence" [@kamvar2019epidemic].
 
-```{r,fig.height = 3, fig.width = 7, echo=FALSE}
-# 
-# par(mfrow=c(1,2))
-# should we count dates on x axis from outbreak onset or in calendar date
-# ** need titles, x label
-# * make incidence plots pretty
-# plot.new()
+<!-- # ```{r,fig.height = 3, fig.width = 7, echo=FALSE} -->
+<!-- # # par(mfrow=c(1,2)) -->
+<!-- # # should we count dates on x axis from outbreak onset or in calendar date -->
+<!-- # # ** need titles, x label -->
+<!-- # # * make incidence plots pretty -->
+<!-- # # plot.new() -->
+<!-- # plot(incidence(transformedData$onsetDate,interval = 1))  + labs(y = "Daily incidence", x ="Date" ) -->
+<!-- ``` -->
 
-plot(incidence(transformedData$onsetDate,interval = 1))  + labs(y = "Daily incidence", x ="Date" )
-
-
-```
-
-Figure 2 below shows the weekly number of reported Ebola cases from the beginning of the epidemic up until the onset week of the last reported case. Week `r weekOfMaxIncidence` witnessed the highest number of Ebola cases so far, with `r maxWeeklyIncidence` cases occurring. 
+Figure 2 below shows the weekly number of reported Ebola cases from the beginning of the epidemic up until the onset week of the last reported case. Week `r weekOfMaxIncidence` of the outbreak witnessed the highest number of Ebola cases so far, with `r maxWeeklyIncidence` cases occurring. 
 
 
 ```{r,fig.height = 3, fig.width = 7, echo = FALSE}
@@ -193,9 +197,11 @@ Figure 3 below shows the cumulative number of Ebola cases from the date of the f
 plot(cumulate(incidence(transformedData$onsetDate,interval = 1)))
 
 ```
-
+The daily cumulative incidence plot provides a visualisation of the total burden of the epidemic. **
 
 ## Case fatality rate
+
+* The estimated case fatality rate is `r caseFatalityEstimate`\%. The case fatality rate among females is `r caseFatalityF`\% while the case fatality rate among males is `r caseFatalityM`\%.
 
 ```{r, echo=FALSE}
 casesWhichWouldHaveDiedIfTheyWereGoingToDie <- transformedData %>%
@@ -205,13 +211,17 @@ mutbd = signif(mean(as.numeric(transformedData$timeBeforeDeath),na.rm = TRUE),1)
 sdtbd = signif(2*sd(as.numeric(transformedData$timeBeforeDeath),na.rm = TRUE),1)
 
 ```
+
+
+##### Details regarding case fatality estimation:
+
 The case fatality rate is estimated under the assumption that cases for which the date of death is not reported have recovered. As such, recently-reported cases should not be included in this calculation, since they are relatively likely to still be alive regardless of their prospects for recovery, and their inclusion would result in under-estimation of the case fatality.
 
 The case fatality rate is estimated as follows:
 The delays between onset and death are calculated for all cases with a date of death. The mean $\mu$ and standard deviation $\sigma$ of these times (in days) is calculated. The most recent cases considered for inclusion in the case fatality must be have occurred at least $\mu+2 \sigma =$ `r mutbd` $+$ `r sdtbd` $\approx$ `r signif(liberalThreshold,1)` days before the most recent report date.
 We assume that cases without a recorded death date (death date = NA) for more than `r signif(liberalThreshold,1)` after date of onset have recovered. This leaves `r signif(100*nrow(casesWhichWouldHaveDiedIfTheyWereGoingToDie)/nrow(transformedData),2)`\% of the cases to date which occurred early enough (date of onset at least `r signif(liberalThreshold,1)` before the last date of reporting) to be included in the case fatality rate.
 
-* Using this method, the case fatality rate is estimated to be `r caseFatalityEstimate`\%.
+
 
 Using more conservative requirement for inclusion, namely that delay between case onset and most recent report in the data set is greater than the maximum delay between onset and death (`r conservativeThreshold` days),  the case fatality is calculated to be `r caseFatalityEstimateUsingMaxTimeToDeath`\%.
 
@@ -238,6 +248,7 @@ In most of the reported cases, there are delays between the date of onset and th
 hist(as.numeric(difftime(transformedData$reportDate,transformedData$onsetDate)),main="",xlab = "Reporting delay",ylab= "Frequency")
 ```
 
+This SitRep should be interpreted in light of these reporting delays. For example, the incidence in the most recent week is likely under-reported to a significant extent - since $>$ half of cases take more than a `r signif(meanReportingDelay,1)` to be reported, a rough estimate would suggest that the incidence in the most recent week is approximately double the reported value.
 
 ## Time to death in fatal cases
 Figure 5 presents the time delay from the onset of disease to the time of death in fatal cases.
@@ -266,7 +277,7 @@ model = fit(incidence(transformedData$onsetDate,interval=7))
 plot(model) + geom_point(aes(x=incidence(transformedData$onsetDate,interval=7)$dates,y=incidence(transformedData$onsetDate,interval=7)$counts,col='red')) + theme(legend.position = "none")
 ```
 
-The exponential daily growth rate in the single-model fit is estimated to be `r signif(model$info$r,3)` with a $2.5\%$ to $95\%$ confidence interval (`r signif(model$info$r.conf[1],3)`; `r signif(model$info$r.conf[2],3)`).
+The exponential daily growth rate in the single-model fit is estimated to be `r toString(signif(model$info$r,2))` with a 95\% confidence interval of (`r signif(model$info$r.conf[1],2)`; `r signif(model$info$r.conf[2],2)`).
 
 
 Next, two separate exponential models are fit to the weekly incidence data - one up to and including the peak week, and one starting at the peak weak until the week with the most recent available data. Again, this should be interpreted with caution given the sample size.
