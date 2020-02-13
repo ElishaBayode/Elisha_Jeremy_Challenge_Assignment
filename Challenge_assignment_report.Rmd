@@ -28,7 +28,7 @@ library(linelist)
 library(tidyverse)
 library(lubridate)
 library(incidence)
-# library(R0)
+library(R0)
 
 
 chooseDirectory = function(caption = 'Select data directory') {   #https://stackoverflow.com/questions/48218491/os-independent-way-to-select-directory-interactively-in-r
@@ -279,10 +279,10 @@ In most of the reported cases, there are delays between the date of onset and th
 hist(as.numeric(difftime(transformedData$reportDate,transformedData$onsetDate)),main="",xlab = "Reporting delay",ylab= "Frequency")
 ```
 
-This SitRep should be interpreted in light of these reporting delays. For example, the incidence in the most recent week is likely under-reported to a significant extent - since $>$ half of cases take more than a `r signif(meanReportingDelay,2)` days to be reported, a rough estimate would suggest that the incidence in the most recent week is approximately double the reported value. 
+This SitRep should be interpreted in light of these reporting delays. For example, the incidence in the most recent week is likely under-reported to a significant extent - since more than half of cases take more than a `r signif(meanReportingDelay,2)` days to be reported, a rough estimate would suggest that the incidence in the most recent week is approximately double the reported value. 
 
-##### Note regarding reporting delays
-The above reporting delays are likely under-estimates, since recent cases which appear in the data have shorter reporting delays than recent cases which have not yet been reported. Using the same threshold as with the case fatality estimate (see "Details regarding case fatality estimation"), a more carefully calculated estimate of mean reporting delay is `r signif(calculateCarefulReportingDelay(transformedData, liberalReportingThreshold),2)` days.
+<!--##### Note regarding reporting delays
+The above reporting delays are likely under-estimates, since recent cases which appear in the data have shorter reporting delays than recent cases which have not yet been reported. Using the same threshold as with the case fatality estimate (see "Details regarding case fatality estimation"), a more carefully calculated estimate of mean reporting delay is `r signif(calculateCarefulReportingDelay(transformedData, liberalReportingThreshold),2)` days. -->
 
 ## Life history parameters
 
@@ -306,9 +306,38 @@ hist(as.numeric(transformedData$timeBeforeDeath),breaks = 10, main = '',xlab='De
 
 Understanding the life history of this strain of Ebola, in this context, may be valuable for comparison with other outbreaks, forecast modelling, and patient management.
 
+
+##### Serial intervals
+
+The mean serial interval in an outbreak is the mean delay between symptoms in a "source" or "infector" case and symptoms in subsequently infected cases. The suspected source of infection if known for `r signif(100* sum(!is.na(serialIntervals))/nrow(transformedData),2)`\% of cases reported to date. Among these cases, the mean serial interval is `r mean(as.numeric(serialIntervals), na.rm = TRUE)` days.
+
 ##### Generation time
 
-The suspected source of infection is known for `r signif(100* sum(!is.na(generationTimes))/nrow(transformedData),2)`\% of cases thus far. The mean generation time (for cases where the generation time is known) is `r signif(mean( generationTimes, na.rm=TRUE ), 2)` days, with a standard deviation of `r signif(sd( generationTimes, na.rm=TRUE),2)` days.
+The mean generation time of infections in an outbreak is the mean delay between exposure in an "infector" (or source case) and exposure in cases infected by the "infector". The suspected source of infection, and the date of exposure for the source of infection, is known for `r signif(100* sum(!is.na(generationTimes))/nrow(transformedData),2)`\% of cases reported to date. The mean generation time (for cases where the generation time is known) is `r signif(mean( generationTimes, na.rm=TRUE ), 2)` days, with a standard deviation of `r signif(sd( generationTimes, na.rm=TRUE),2)` days.
+
+
+
+##### R0 estimation
+
+
+A key parameter used to describe outbreak dynamics is the so-called basic reproduction number "R0", which reflects the number of secondary cases caused by a single hypothetical primary case in a fully-susceptible population. Values of R0 greater than 1 indicate that an outbreak can grow large, while R0 less than 1 indicates that.
+The R package "R0" [@obadia2012r0] is used to estimate the value of R0 in the outbreak at hand, according to the method described by [@wallinga2007generation].
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+updatedtransformData <- cbind.data.frame(transformedData, serialIntervals, 
+                                            generationTimes) 
+
+
+GT <- suppressMessages(est.GT(infector.onset.dates = NULL, infectee.onset.dates = NULL,
+       serial.interval = updatedtransformData$serialIntervals[!is.na(updatedtransformData$serialIntervals)], request.plot = F,))
+
+dailyIncidence = as.data.frame(incidence(transformedData$onsetDate,interval=1))
+
+reproductionNumber <- est.R0.EG(dailyIncidence$counts, GT, t = NULL, begin = NULL, end = NULL, date.first.obs = NULL,
+          time.step = 1, reg.met = "poisson", checked = FALSE)
+
+```
+The estimated value of R0 in outbreak at hand is `r reproductionNumber$R`, with a $95\%$ confidence interval of (`r reproductionNumber$conf.int[1]`;`r reproductionNumber$conf.int[2]`).
+
 
 ## Fitting an exponential growth model to the weekly incidence
 

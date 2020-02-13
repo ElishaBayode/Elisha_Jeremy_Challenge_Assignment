@@ -120,9 +120,9 @@ updatedtransformData <- cbind.data.frame(transformedData, serialIntervals,
 
 
 GT <- est.GT(infector.onset.dates = NULL, infectee.onset.dates = NULL,
-       serial.interval = updatedtransformData$serialIntervals[! is.na(updatedtransformData$serialIntervals)], request.plot = T)
+       serial.interval = updatedtransformData$serialIntervals[!is.na(updatedtransformData$serialIntervals)], request.plot = T)
 
-weeklyIncidence = as.data.frame(incidence(transformedData$onsetDate,interval=1))
+dailyIncidence = as.data.frame(incidence(transformedData$onsetDate,interval=1))
 
 reproductionNumber <- est.R0.EG(weeklyIncidence$counts, GT, t = NULL, begin = NULL, end = NULL, date.first.obs = NULL,
           time.step = 1, reg.met = "poisson", checked = FALSE)
