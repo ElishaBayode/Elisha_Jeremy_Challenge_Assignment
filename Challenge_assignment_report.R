@@ -283,3 +283,13 @@ ensure_library = function (lib.name){
   }
   x
 }
+
+sourceNames = unique(transformedData$source)
+infcounts = rep(0,length(sourceNames))
+i=0
+for (sourceName in sourceNames){
+  infCount = sum(transformedData$source == sourceName, na.rm = TRUE)
+  infcounts[i] = infCount
+  i = i+1
+}
+hist(infcounts)
