@@ -14,7 +14,7 @@ library(tidyverse)
 library(lubridate)
 library(incidence)
 library(envDocument)
-
+library(R0)
 # FILE <- file.choose()
 # DIR  <- dirname(FILE)
 # *set automatic prompt
@@ -111,6 +111,20 @@ for (i in seq(1,nrow(transformedData))){
 
 serialIntervals
 generationTimes
+
+
+
+#######Estimating R0#########
+updatedtransformData <- cbind.data.frame(transformedData, serialIntervals, 
+                                            generationTimes) 
+
+
+est.GT(infector.onset.dates = NULL, infectee.onset.dates = NULL,
+       serial.interval = updatedtransformData$serialIntervals[! is.na(updatedtransformData$serialIntervals)], request.plot = T)
+
+
+
+
 
 hist(serialIntervals)
 hist(generationTimes)
