@@ -19,7 +19,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # devtools::install_github("reconhub/linelist")
 # devtools::install_github("reconhub/reportfactory")
 # devtools::install_github("reconhub/epicontacts")
-
+# install.packages("R0")
 # *set required packages to automatically install if necessary
 
 library(tcltk)
@@ -28,6 +28,8 @@ library(linelist)
 library(tidyverse)
 library(lubridate)
 library(incidence)
+library(R0)
+
 
 chooseDirectory = function(caption = 'Select data directory') {   #https://stackoverflow.com/questions/48218491/os-independent-way-to-select-directory-interactively-in-r
   if (exists('utils::choose.dir')) {
@@ -277,10 +279,11 @@ model = fit(incidence(transformedData$onsetDate,interval=7))
 plot(model) + geom_point(aes(x=incidence(transformedData$onsetDate,interval=7)$dates,y=incidence(transformedData$onsetDate,interval=7)$counts,col='red')) + theme(legend.position = "none")
 ```
 
-The exponential daily growth rate in the single-model fit is estimated to be `r toString(signif(model$info$r,2))` with a 95\% confidence interval of (`r signif(model$info$r.conf[1],2)`; `r signif(model$info$r.conf[2],2)`).
-
-
-Next, two separate exponential models are fit to the weekly incidence data - one up to and including the peak week, and one starting at the peak weak until the week with the most recent available data. Again, this should be interpreted with caution given the sample size.
+The exponential daily growth rate in the single-model fit is estimated to be `r toString(signif(model$info$r,2))` with a 95\% confidence interval of (`r signif(model$info$r.conf[1],2)`; `r signif(model$info$r.conf[2],2)`). A positive growth rate value indicates that an epidemic is growing, whereas, a negative growth rate value shows that an epidemic is declining. 
+We found that the single exponential model fit was flat, with a negative growth rate. This might suggest that the epidemic has peaked and  now getting smaller. 
+To investigate this, we fitted two exponential functions to the incidence data. One for its exponential growth phase, and the other for the exponential decline phase of the epidemic. 
+The overall pattern of the growth rate suggests that the epidemic grew slowly at the onset, and after reaching a peak, it started declining slowly almost in an identical pattern to its growth.   
+The wide confidence bounds around the growth rate estimate is an indication that the small sample size may limit the accuracy of our estimates. Consequently,  these results should be interpreted with caution.
 
 ```{r,fig.height = 3, fig.width = 7, echo=FALSE}
 plot(model2) + geom_point(aes(x=incidence(transformedData$onsetDate,interval=7)$dates,y=incidence(transformedData$onsetDate,interval=7)$counts,col='red')) + theme(legend.position = "none")
