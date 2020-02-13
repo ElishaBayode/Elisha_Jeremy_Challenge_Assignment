@@ -309,7 +309,12 @@ Understanding the life history of this strain of Ebola, in this context, may be 
 
 ##### Serial intervals
 
-The mean serial interval in an outbreak is the mean delay between symptoms in a "source" or "infector" case and symptoms in subsequently infected cases. The suspected source of infection if known for `r signif(100* sum(!is.na(serialIntervals))/nrow(transformedData),2)`\% of cases reported to date. Among these cases, the mean serial interval is `r mean(as.numeric(serialIntervals), na.rm = TRUE)` days.
+The mean serial interval in an outbreak is the mean delay between symptoms in a "source" or "infector" case and symptoms in subsequently infected cases. The suspected source of infection if known for `r signif(100* sum(!is.na(serialIntervals))/nrow(transformedData),2)`\% of cases reported to date. Among these cases, the mean serial interval is `r mean(as.numeric(serialIntervals), na.rm = TRUE)` days. A histogram of the observed serial intervals is plotted below.
+
+```{r, echo=FALSE}
+hist(as.numeric(serialIntervals), main = '',xlab='Serial interval (days)',ylab= 'Frequency')
+
+```
 
 ##### Generation time
 
