@@ -20,6 +20,7 @@ library(envDocument)
 # *set automatic prompt
 setwd("C:/Users/ELISHAARE/Desktop/Challenge_assignment/Elisha_Jeremy_Challenge_Assignment")
 setwd("C:/Users/jeremyb/Desktop/Smarties/Elisha_Jeremy_Challenge_Assignment")
+setwd("C:/Users/jem/Desktop/Smarties/Elisha_Jeremy_Challenge_Assignment")
 
 ##Define functions
 
@@ -30,12 +31,12 @@ calculateCarefulCaseFatality <- function(dataset, thresholdTimeToDeath, rounded=
   nCases = nrow(casesConsidered)
   nDeaths = nCases - sum(is.na(casesConsidered$deathDate))
   caseFatalityRate = nDeaths/nCases
- 
+  
   #* if (nrow(casesConsidered==0)){
   #   print("There are no cases in this dataset which are eligible.")
   #   return(NA)
   # }
- 
+  
   if(rounded){
     if(asPercentage){  
       return(round(100*caseFatalityRate))}
@@ -69,7 +70,7 @@ calculateCrudeCaseFatality <- function(dataset, rounded=TRUE, asPercentage=TRUE)
 
 ##
 
-ebolaData <- read.csv(file = "ebola_2.csv") #importing raw data
+ebolaData <- read.csv(file = "ebola_2_update.csv") #importing raw data
 ebolaDataDateFormatted <- clean_dates(ebolaData)
 # ebola_linelist_data_cleann <-  clean_dates(ebola_linelist_data)
 
@@ -80,6 +81,46 @@ transformedData <- ebolaDataDateFormatted %>%
 
 transformedData <- transformedData %>%
                                     mutate(timeBeforeDeath = difftime(deathDate,onsetDate))
+
+transformedData <- transformedData %>%
+                                    mutate(incubationPeriod = difftime(onsetDate,exposureDate))
+
+
+hist(as.numeric(transformedData$incubationPeriod))
+mean(transformedData$incubationPeriod,na.rm=TRUE)
+median(transformedData$incubationPeriod,na.rm=TRUE)
+sd(transformedData$incubationPeriod,na.rm=TRUE)
+
+typeof(transformedData$source[7])
+
+serialIntervals = rep(NA, nrow(transformedData))
+generationTimes = rep(NA,nrow(transformedData))
+
+for (i in seq(1,nrow(transformedData))){
+  if(!is.na(transformedData$source[i])){
+    # print(toString(transformedData$source[i]))
+    serialIntervals[i] = difftime(transformedData$onsetDate[i],
+                                  transformedData$onsetDate[ transformedData$source[i] == transformedData$caseID ])
+    if (!is.na(transformedData$exposureDate[ transformedData$source[i] == transformedData$caseID ])){
+      generationTimes[i] = difftime(transformedData$exposureDate[i],
+                                    transformedData$exposureDate[ transformedData$source[i] == transformedData$caseID ]  )
+    }
+    
+  }
+}
+
+serialIntervals
+generationTimes
+
+hist(serialIntervals)
+hist(generationTimes)
+
+mean(serialIntervals, na.rm=TRUE)
+sd(serialIntervals, na.rm = TRUE)
+
+mean(generationTimes, na.rm=TRUE)
+sd(generationTimes, na.rm = TRUE)
+
 
 
 # hist(as.numeric(transformedData$timeBeforeDeath),breaks = 10)
