@@ -14,7 +14,7 @@ library(tidyverse)
 library(lubridate)
 library(incidence)
 library(envDocument)
-
+library(R0)
 # FILE <- file.choose()
 # DIR  <- dirname(FILE)
 # *set automatic prompt
@@ -111,6 +111,27 @@ for (i in seq(1,nrow(transformedData))){
 
 serialIntervals
 generationTimes
+
+
+
+#######Estimating R0#########
+updatedtransformData <- cbind.data.frame(transformedData, serialIntervals, 
+                                            generationTimes) 
+
+
+GT <- est.GT(infector.onset.dates = NULL, infectee.onset.dates = NULL,
+       serial.interval = updatedtransformData$serialIntervals[! is.na(updatedtransformData$serialIntervals)], request.plot = T)
+
+weeklyIncidence = as.data.frame(incidence(transformedData$onsetDate,interval=1))
+
+reproductionNumber <- est.R0.EG(weeklyIncidence$counts, GT, t = NULL, begin = NULL, end = NULL, date.first.obs = NULL,
+          time.step = 1, reg.met = "poisson", checked = FALSE)
+
+
+
+
+
+
 
 hist(serialIntervals)
 hist(generationTimes)
