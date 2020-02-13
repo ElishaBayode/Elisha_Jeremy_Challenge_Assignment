@@ -81,6 +81,15 @@ calculateCrudeCaseFatality <- function(dataset, rounded=TRUE, asPercentage=TRUE)
   return(caseFatalityRate)
 }
 
+calculateCarefulReportingDelay <- function(dataset, thresholdTimeToReport){
+  lastReportDate = last(dataset$reportDate)
+  casesConsidered <- dataset %>%
+    subset(as.numeric(difftime(lastReportDate,onsetDate)) >= thresholdTimeToReport)
+  return(mean(as.numeric(difftime(casesConsidered$reportDate,casesConsidered$onsetDate)),na.rm = TRUE))
+}
+
+
+
 ```
 
 ```{r Data import, echo=FALSE}
@@ -146,6 +155,8 @@ lastOnsetDate = last(transformedData$onsetDate)
 conservativeThreshold <- max(as.numeric(transformedData$timeBeforeDeath),na.rm = TRUE)
 liberalThreshold <- mean(as.numeric(transformedData$timeBeforeDeath),na.rm = TRUE)+2*sd(as.numeric(transformedData$timeBeforeDeath),na.rm = TRUE)
 
+liberalReportingThreshold <- mean(as.numeric(transformedData$reportingDelay),na.rm=TRUE) + 2 * sd(as.numeric(transformedData$reportingDelay),na.rm=TRUE)
+
 caseFatalityEstimate = calculateCarefulCaseFatality(transformedData,liberalThreshold)
 caseFatalityEstimateUsingMaxTimeToDeath = calculateCarefulCaseFatality(transformedData,conservativeThreshold)
 crudeCaseFatality = calculateCrudeCaseFatality(transformedData)
@@ -164,6 +175,21 @@ weeklyIncidenceToDate = incidence(transformedData$onsetDate,interval = 7)
 maxWeeklyIncidence = max(weeklyIncidenceToDate$counts)
 weekOfMaxIncidence = which.max(weeklyIncidenceToDate$counts)
 
+transformedData <- transformedData %>%
+                                    mutate(incubationPeriod = difftime(onsetDate,exposureDate))
+
+serialIntervals = rep(NA, nrow(transformedData))
+generationTimes = rep(NA,nrow(transformedData))
+
+for (i in seq(1,nrow(transformedData))){
+  if(!is.na(transformedData$source[i])){
+    # print(toString(transformedData$source[i]))
+    serialIntervals[i] = difftime(transformedData$onsetDate[i],
+                                  transformedData$onsetDate[ transformedData$source[i] == transformedData$caseID ])
+    if (!is.na(transformedData$exposureDate[ transformedData$source[i] == transformedData$caseID ])){
+      generationTimes[i] = difftime(transformedData$exposureDate[i],
+                                    transformedData$exposureDate[ transformedData$source[i] == transformedData$caseID ] )
+    }}}
 
 ```
 
@@ -253,7 +279,36 @@ In most of the reported cases, there are delays between the date of onset and th
 hist(as.numeric(difftime(transformedData$reportDate,transformedData$onsetDate)),main="",xlab = "Reporting delay",ylab= "Frequency")
 ```
 
-This SitRep should be interpreted in light of these reporting delays. For example, the incidence in the most recent week is likely under-reported to a significant extent - since $>$ half of cases take more than a `r signif(meanReportingDelay,1)` to be reported, a rough estimate would suggest that the incidence in the most recent week is approximately double the reported value.
+This SitRep should be interpreted in light of these reporting delays. For example, the incidence in the most recent week is likely under-reported to a significant extent - since $>$ half of cases take more than a `r signif(meanReportingDelay,2)` days to be reported, a rough estimate would suggest that the incidence in the most recent week is approximately double the reported value. 
+
+##### Note regarding reporting delays
+The above reporting delays are likely under-estimates, since recent cases which appear in the data have shorter reporting delays than recent cases which have not yet been reported. Using the same threshold as with the case fatality estimate (see "Details regarding case fatality estimation"), a more carefully calculated estimate of mean reporting delay is `r signif(calculateCarefulReportingDelay(transformedData, liberalReportingThreshold),2)` days.
+
+## Life history parameters
+
+##### Incubation period
+
+Estimated exposure dates are available in `r signif(100* sum(!is.na(transformedData$incubationPeriod))/ncol(transformedData),2)`\%  of reported cases. In such cases for which exposure dates are available, the delays between exposure and onset (incubation periods) are calculated. The figure below illustrates the distribution of incubation periods.
+
+```{r, echo=FALSE}
+hist(as.numeric(transformedData$incubationPeriod), main="",xlab = "Incubation Period",ylab= "Frequency")
+```
+
+The mean incubation period is `r signif(mean(transformedData$incubationPeriod, na.rm=TRUE),2)` days, with a standard deviation of `r signif(sd(transformedData$incubationPeriod, na.rm=TRUE),2)` days. 
+
+##### Delays between onset and death in fatal cases
+
+Figure 5 presents the time delay from the onset of disease to the time of death in fatal cases.
+
+```{r, echo=FALSE}
+hist(as.numeric(transformedData$timeBeforeDeath),breaks = 10, main = '',xlab='Delays between onset and death in fatal cases',ylab= 'Frequency')
+```
+
+Understanding the life history of this strain of Ebola, in this context, may be valuable for comparison with other outbreaks, forecast modelling, and patient management.
+
+##### Generation time
+
+The suspected source of infection is known for `r signif(100* sum(!is.na(generationTimes))/nrow(transformedData),2)`\% of cases thus far. The mean generation time (for cases where the generation time is known) is `r signif(mean( generationTimes, na.rm=TRUE ), 2)` days, with a standard deviation of `r signif(sd( generationTimes, na.rm=TRUE),2)` days.
 
 ## Fitting an exponential growth model to the weekly incidence
 
